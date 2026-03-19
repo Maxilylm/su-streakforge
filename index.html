@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreakForge - Daily Habit Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a25;
+      --border: #2a2a3a;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #22c55e;
+      --accent-dim: #166534;
+      --danger: #ef4444;
+      --g0: #161b22;
+      --g1: #0e4429;
+      --g2: #006d32;
+      --g3: #26a641;
+      --g4: #39d353;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    header h1 span { color: var(--accent); }
+
+    header p {
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-size: 0.9rem;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-primary:hover { background: #16a34a; }
+
+    .btn-danger { border-color: var(--danger); color: var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+
+    .habits-grid {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .habit-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .habit-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .habit-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .habit-emoji { font-size: 1.6rem; }
+
+    .habit-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .habit-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .check-today {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      transition: all 0.15s;
+    }
+
+    .check-today:hover { border-color: var(--accent); }
+    .check-today.checked { background: var(--accent); border-color: var(--accent); }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .delete-btn:hover { color: var(--danger); }
+
+    .habit-stats {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .heatmap {
+      display: flex;
+      gap: 3px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .heatmap-week {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .heatmap-cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--g0);
+    }
+
+    .heatmap-cell.level-1 { background: var(--g1); }
+    .heatmap-cell.level-2 { background: var(--g2); }
+    .heatmap-cell.level-3 { background: var(--g3); }
+    .heatmap-cell.level-4 { background: var(--g4); }
+    .heatmap-cell.future { background: var(--surface); opacity: 0.3; }
+
+    .heatmap-labels {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-right: 6px;
+      justify-content: flex-start;
+    }
+
+    .heatmap-label {
+      height: 14px;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      display: none;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      width: 90%;
+      max-width: 420px;
+    }
+
+    .modal h2 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+    }
+
+    .modal input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      margin-bottom: 16px;
+    }
+
+    .modal input[type="text"]:focus { border-color: var(--accent); }
+
+    .emoji-picker {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .emoji-option {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: var(--surface2);
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+
+    .emoji-option:hover { border-color: var(--border); }
+    .emoji-option.selected { border-color: var(--accent); background: var(--accent-dim); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+
+    .empty-state p { font-size: 1.1rem; margin-top: 12px; }
+    .empty-state .big { font-size: 3rem; }
+
+    @media (max-width: 600px) {
+      body { padding: 16px; }
+      .habit-stats { gap: 16px; }
+      .stat-value { font-size: 1.4rem; }
+      .heatmap-cell { width: 11px; height: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔥 Streak<span>Forge</span></h1>
+    <p>Track daily habits. Build streaks. All data stays on your device.</p>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn btn-primary" id="addHabitBtn">+ Add Habit</button>
+    <button class="btn" id="exportBtn">Export JSON</button>
+  </div>
+
+  <div class="habits-grid" id="habitsGrid"></div>
+
+  <!-- Add Habit Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h2>New Habit</h2>
+      <input type="text" id="habitNameInput" placeholder="Habit name..." maxlength="40" />
+      <p style="font-size:0.85rem; color: var(--text-dim); margin-bottom: 10px;">Pick an emoji:</p>
+      <div class="emoji-picker" id="emojiPicker"></div>
+      <div class="modal-actions">
+        <button class="btn" id="cancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveHabitBtn">Add Habit</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // --- Data Layer ---
+    const STORAGE_KEY = 'streakforge_data';
+    const EMOJIS = [
+      '💪','🏃','📚','💧','🧘','✍️','🎸','🎨',
+      '💤','🥗','💊','🧹','📱','🌅','🐕','🚴',
+      '🏋️','🧠','🎯','⏰','🍎','☕','🌿','💻',
+      '📝','🎵','🏊','🧪','🔬','💡','🎮','🪴',
+    ];
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return { habits: [] };
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function dateStr(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
+    // --- Streak Calculation ---
+    function calcStreak(completions) {
+      let streak = 0;
+      const d = new Date();
+      // Check if today is done; if not, start from yesterday
+      if (!completions[dateStr(d)]) {
+        d.setDate(d.getDate() - 1);
+      }
+      while (completions[dateStr(d)]) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      }
+      return streak;
+    }
+
+    function calcBestStreak(completions) {
+      const dates = Object.keys(completions).filter(k => completions[k]).sort();
+      if (dates.length === 0) return 0;
+      let best = 1, current = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1]);
+        const curr = new Date(dates[i]);
+        const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+        if (diff === 1) {
+          current++;
+          if (current > best) best = current;
+        } else {
+          current = 1;
+        }
+      }
+      return best;
+    }
+
+    function calcCompletionRate(completions, days) {
+      const d = new Date();
+      let total = 0, done = 0;
+      for (let i = 0; i < days; i++) {
+        total++;
+        if (completions[dateStr(d)]) done++;
+        d.setDate(d.getDate() - 1);
+      }
+      return total > 0 ? Math.round((done / total) * 100) : 0;
+    }
+
+    // --- Heatmap ---
+    function buildHeatmap(completions) {
+      const today = new Date();
+      const todayDay = today.getDay(); // 0=Sun
+      const weeks = 12;
+
+      // Start: 12 weeks ago, on Sunday
+      const start = new Date(today);
+      start.setDate(start.getDate() - ((weeks - 1) * 7 + todayDay));
+
+      const container = document.createElement('div');
+      container.className = 'heatmap';
+
+      // Day labels
+      const labels = document.createElement('div');
+      labels.className = 'heatmap-labels';
+      const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      dayNames.forEach((n, i) => {
+        const lbl = document.createElement('div');
+        lbl.className = 'heatmap-label';
+        lbl.textContent = (i % 2 === 1) ? n : '';
+        labels.appendChild(lbl);
+      });
+      container.appendChild(labels);
+
+      const cursor = new Date(start);
+      for (let w = 0; w < weeks; w++) {
+        const weekCol = document.createElement('div');
+        weekCol.className = 'heatmap-week';
+        for (let d = 0; d < 7; d++) {
+          const cell = document.createElement('div');
+          cell.className = 'heatmap-cell';
+          const ds = dateStr(cursor);
+
+          if (cursor > today) {
+            cell.classList.add('future');
+          } else if (completions[ds]) {
+            cell.classList.add('level-4');
+          }
+
+          cell.title = ds;
+          weekCol.appendChild(cell);
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        container.appendChild(weekCol);
+      }
+
+      return container;
+    }
+
+    // --- Rendering ---
+    function render() {
+      const data = loadData();
+      const grid = document.getElementById('habitsGrid');
+      grid.innerHTML = '';
+
+      if (data.habits.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="big">🔥</div>
+            <p>No habits yet. Add one to start forging streaks!</p>
+          </div>`;
+        return;
+      }
+
+      const today = todayStr();
+
+      data.habits.forEach(habit => {
+        const card = document.createElement('div');
+        card.className = 'habit-card';
+
+        const streak = calcStreak(habit.completions);
+        const best = calcBestStreak(habit.completions);
+        const week = calcCompletionRate(habit.completions, 7);
+        const month = calcCompletionRate(habit.completions, 30);
+        const isChecked = !!habit.completions[today];
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'habit-header';
+        header.innerHTML = `
+          <div class="habit-title">
+            <span class="habit-emoji">${habit.emoji}</span>
+            <span class="habit-name">${escapeHtml(habit.name)}</span>
+          </div>
+          <div class="habit-actions">
+            <button class="check-today ${isChecked ? 'checked' : ''}" data-id="${habit.id}" title="Toggle today">
+              ${isChecked ? '✓' : ''}
+            </button>
+            <button class="delete-btn" data-id="${habit.id}" title="Delete habit">✕</button>
+          </div>`;
+        card.appendChild(header);
+
+        // Stats
+        const stats = document.createElement('div');
+        stats.className = 'habit-stats';
+        stats.innerHTML = `
+          <div class="stat">
+            <span class="stat-value">${streak}</span>
+            <span class="stat-label">Current Streak</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">${best}</span>
+            <span class="stat-label">Best Streak</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">${week}%</span>
+            <span class="stat-label">This Week</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">${month}%</span>
+            <span class="stat-label">This Month</span>
+          </div>`;
+        card.appendChild(stats);
+
+        // Heatmap
+        card.appendChild(buildHeatmap(habit.completions));
+
+        grid.appendChild(card);
+      });
+
+      // Bind toggle buttons
+      grid.querySelectorAll('.check-today').forEach(btn => {
+        btn.addEventListener('click', () => toggleToday(btn.dataset.id));
+      });
+
+      // Bind delete buttons
+      grid.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteHabit(btn.dataset.id));
+      });
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // --- Actions ---
+    function toggleToday(id) {
+      const data = loadData();
+      const habit = data.habits.find(h => h.id === id);
+      if (!habit) return;
+      const today = todayStr();
+      habit.completions[today] = !habit.completions[today];
+      if (!habit.completions[today]) delete habit.completions[today];
+      saveData(data);
+      render();
+    }
+
+    function deleteHabit(id) {
+      if (!confirm('Delete this habit? This cannot be undone.')) return;
+      const data = loadData();
+      data.habits = data.habits.filter(h => h.id !== id);
+      saveData(data);
+      render();
+    }
+
+    function addHabit(name, emoji) {
+      const data = loadData();
+      data.habits.push({
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        emoji,
+        completions: {}
+      });
+      saveData(data);
+      render();
+    }
+
+    function exportData() {
+      const data = loadData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `streakforge-export-${todayStr()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // --- Modal ---
+    const overlay = document.getElementById('modalOverlay');
+    const nameInput = document.getElementById('habitNameInput');
+    const emojiPicker = document.getElementById('emojiPicker');
+    let selectedEmoji = EMOJIS[0];
+
+    // Build emoji picker
+    EMOJIS.forEach((emoji, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'emoji-option' + (i === 0 ? ' selected' : '');
+      btn.textContent = emoji;
+      btn.addEventListener('click', () => {
+        emojiPicker.querySelectorAll('.emoji-option').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedEmoji = emoji;
+      });
+      emojiPicker.appendChild(btn);
+    });
+
+    document.getElementById('addHabitBtn').addEventListener('click', () => {
+      nameInput.value = '';
+      overlay.classList.add('active');
+      setTimeout(() => nameInput.focus(), 50);
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      overlay.classList.remove('active');
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.classList.remove('active');
+    });
+
+    document.getElementById('saveHabitBtn').addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return; }
+      addHabit(name, selectedEmoji);
+      overlay.classList.remove('active');
+    });
+
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const name = nameInput.value.trim();
+        if (!name) return;
+        addHabit(name, selectedEmoji);
+        overlay.classList.remove('active');
+      }
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+
+    // --- Init ---
+    render();
+  </script>
+</body>
+</html>
